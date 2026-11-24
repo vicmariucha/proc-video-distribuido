@@ -1,0 +1,57 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq          # nome fixo: o RabbitMQ guarda os dados por nome de nó
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # painel web (guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq   # filas e mensagens sobrevivem se o container for recriado
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    build: .
+    image: proc-video-distribuido
+    command: ["python", "worker.py"]
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      replicas: 3       # altere com: docker compose up -d --scale worker=N
+
+  agregador:
+    build: .
+    image: proc-video-distribuido
+    command: ["python", "agregador.py"]
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      PASTA_SAIDA: /data/output
+    volumes:
+      - ./data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  produtor:             # executado sob demanda com "docker compose run"
+    build: .
+    image: proc-video-distribuido
+    entrypoint: ["python", "produtor.py"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    volumes:
+      - ./data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    profiles: ["cli"]
+
+volumes:
+  rabbitmq_data:
