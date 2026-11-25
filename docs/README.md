@@ -197,4 +197,4 @@ docker compose run --rm produtor --entrada /data/input/video.mp4 --filtro cartoo
 
 ## Vídeo de demonstração
 
-[Link para o vídeo (< 5 min)](COLOCAR_LINK_AQUI)
+[Link para o vídeo (< 5 min)](https://youtu.be/4QEXzy7TfqM)
